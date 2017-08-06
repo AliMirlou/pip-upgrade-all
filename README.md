@@ -10,7 +10,7 @@ Simple and easy-to-use app to update pip packages.
 
 ## Options
 ### `--interactive` `-i`
-Runs the app in a loop till exit or keyboard interrupt. 
+Runs the app in a loop till exit or keyboard interrupt.
 
 ### `--ignore_stdout` `-s`
 Silences the output of pip's logging of upgrade progress.

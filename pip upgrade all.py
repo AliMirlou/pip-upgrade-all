@@ -1,11 +1,13 @@
+#!/bin/python3
 import platform
-import sys
 import pip
+import sys
+from argparse import ArgumentParser
 from io import StringIO
 from contextlib import redirect_stdout
 
 outdated = []
-ignore_stdout = False
+args = None
 
 
 def check_outdated_packages():
@@ -22,13 +24,17 @@ def update(package_index):
     if platform.system() == 'Windows' and package_name in ['numpy', 'scipy']:
         print("Error: Package %s is skipped for compatibility issues on windows\n" % package_name)
         return False
-    print("Updating %s to version %s..." % (package_name, package_new_version))
+    print("Updating %s to version %s... " % (package_name, package_new_version), end='')
+    sys.stdout.flush()
     f = StringIO()
+    options = ['--upgrade']
+    if args.ignore_stdout:
+        options.append('--no-progress-bar')
     with redirect_stdout(f):
-        pip.main(['install', '--upgrade', '%s==%s' % (package_name, package_new_version)])
-    if not ignore_stdout:
-        print(f.getvalue().split('\n'))
-        print("Update Complete")
+        pip.main(['install', *options, '%s==%s' % (package_name, package_new_version)])
+    print("Completed")
+    if not args.ignore_stdout:
+        print(f.getvalue())
     return True
 
 
@@ -48,34 +54,43 @@ def create_outdated_list(_list):
 
 
 def choice_menu():
-    choice = input("\nWhich library do you want to update? [all,<number,>,exit] ")
+    choice = input("\nWhich package do you want to update? [all,<number,>,exit] ")
     if choice == 'exit':
-        return
+        return False
     if choice == 'all':
         choice = input("\nAre you sure to update all outdated packages? [y,<else>] ")
         if choice == 'y':
             update_all()
-            return
+            return True
     choices = choice.split(',')
     for choice in choices:
         try:
-            update(int(choice)-1)
+            update(int(choice) - 1)
         except IndexError:
             print('Error: Choice out of range')
 
+
 if __name__ == "__main__":
-    print("Searching for outdated packages...")
+    parser = ArgumentParser(prog='pip-upgrade-all',
+                            description='Gives you the ability to update all or some packages '
+                                        'installed on pip with interactive menu',
+                            epilog='Created by Ali Mirlou')
+    parser.add_argument('-s', '--ignore_stdout', help="Silences the output of pip's logging of upgrade progress.",
+                        action='store_true')
+    parser.add_argument('-i', '--interactive', help='Runs the app in a loop till exit or keyboard interrupt.',
+                        action='store_true')
+    parser.add_argument('-e', '--exclude', nargs='+', help='Excludes the entered package names from updating.',
+                        dest='package_name')  # TODO
+    args = parser.parse_args()
+
+    print("Searching for outdated packages... ", end='')
+    sys.stdout.flush()
     output = check_outdated_packages()
+    print("Completed")
 
     print("Outdated packages: ")
     create_outdated_list(output)
 
-    options = sys.argv
-    if len(options) > 1:
-        if '--ignore_stdout' in options or options[1].find('s') != -1:
-            ignore_stdout = True
-        if '--interactive' in options or options[1].find('i') != -1:
-            while True:
-                choice_menu()
-    else:
-        choice_menu()
+    while choice_menu():
+        if not args.interactive:
+            break
