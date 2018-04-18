@@ -1,5 +1,4 @@
 #!/bin/python3
-import platform
 import pip
 import sys
 from argparse import ArgumentParser
@@ -26,8 +25,6 @@ def update(package_index):
     if package_name in exclude:
         print("Package is excluded\n" % package_name)
         return False
-    if platform.system() == 'Windows' and package_name in ['numpy', 'scipy']:
-        sys.stderr('WARNING: package %s is not recommended to update because of compatibility issues on Windows')
     sys.stdout.flush()
     options = ['--upgrade'] + global_options
     if args.ignore_stdout:
@@ -38,7 +35,7 @@ def update(package_index):
         a = pip.main(['install', *options, '%s==%s' % (package_name, package_new_version)])
     if a == 2:
         choice = input("Python needs to be elevated with UAC in order to continue. "
-                       "Do you want to give access? [Y,n]")
+                       "Do you want to give access? [Y,n] ")
         if choice == 'Y':
             import pyuac
             a = pyuac.run_as_admin()
@@ -47,7 +44,6 @@ def update(package_index):
                 return False
         else:
             return False
-
     if not args.ignore_stdout:
         print(f.getvalue())
     else:
@@ -97,6 +93,8 @@ if __name__ == "__main__":
                         action='store_true')
     parser.add_argument('-i', '--interactive', help='Runs the app in a loop till exit or keyboard interrupt.',
                         action='store_true')
+    parser.add_argument('backup', '--backup', help='Backs up all installed packages.',
+                        action='store_true')  # TODO
     parser.add_argument('-e', '--exclude', nargs='+', help='Excludes the entered package names from updating.',
                         dest='package_name')  # TODO
     args = parser.parse_args()
