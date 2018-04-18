@@ -7,34 +7,51 @@ from io import StringIO
 from contextlib import redirect_stdout
 
 outdated = []
+exclude = []
+global_options = ['--disable-pip-version-check']
 args = None
 
 
 def check_outdated_packages():
     f = StringIO()
     with redirect_stdout(f):
-        pip.main(['list', '--outdated', '--format=columns'])
+        pip.main(['list', '--outdated', '--format=columns'] + global_options)
     return f.getvalue().split('\n')[3:-1]
 
 
 def update(package_index):
     package = outdated[package_index]
-    package_name = package[0]
+    package_name = package[0].lower()
     package_new_version = package[1]
-    if platform.system() == 'Windows' and package_name in ['numpy', 'scipy']:
-        print("Error: Package %s is skipped for compatibility issues on windows\n" % package_name)
+    if package_name in exclude:
+        print("Package is excluded\n" % package_name)
         return False
-    print("Updating %s to version %s... " % (package_name, package_new_version), end='')
+    if platform.system() == 'Windows' and package_name in ['numpy', 'scipy']:
+        sys.stderr('WARNING: package %s is not recommended to update because of compatibility issues on Windows')
     sys.stdout.flush()
-    f = StringIO()
-    options = ['--upgrade']
+    options = ['--upgrade'] + global_options
     if args.ignore_stdout:
+        print("Updating %s to version %s... " % (package_name, package_new_version), end='')
         options.append('--no-progress-bar')
+    f = StringIO()
     with redirect_stdout(f):
-        pip.main(['install', *options, '%s==%s' % (package_name, package_new_version)])
-    print("Completed")
+        a = pip.main(['install', *options, '%s==%s' % (package_name, package_new_version)])
+    if a == 2:
+        choice = input("Python needs to be elevated with UAC in order to continue. "
+                       "Do you want to give access? [Y,n]")
+        if choice == 'Y':
+            import pyuac
+            a = pyuac.run_as_admin()
+            if a != 0:
+                print("There seems to be a problem elevating python with UAC!")
+                return False
+        else:
+            return False
+
     if not args.ignore_stdout:
         print(f.getvalue())
+    else:
+        print("Completed")
     return True
 
 
@@ -65,9 +82,10 @@ def choice_menu():
     choices = choice.split(',')
     for choice in choices:
         try:
-            update(int(choice) - 1)
+            return update(int(choice.strip()) - 1)
         except IndexError:
             print('Error: Choice out of range')
+    return True
 
 
 if __name__ == "__main__":
@@ -82,6 +100,13 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--exclude', nargs='+', help='Excludes the entered package names from updating.',
                         dest='package_name')  # TODO
     args = parser.parse_args()
+
+    try:
+        exclude_file = open("exclude.txt").readlines()
+        for i in exclude_file:
+            exclude.append(i.lower())
+    except FileNotFoundError:
+        pass
 
     print("Searching for outdated packages... ", end='')
     sys.stdout.flush()
