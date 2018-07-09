@@ -1,5 +1,5 @@
 #!/bin/python3
-import pip
+from pip._internal import main
 import sys
 from argparse import ArgumentParser
 from io import StringIO
@@ -14,7 +14,7 @@ args = None
 def check_outdated_packages():
     f = StringIO()
     with redirect_stdout(f):
-        pip.main(['list', '--outdated', '--format=columns'] + global_options)
+        main(['list', '--outdated', '--format=columns'] + global_options)
     return f.getvalue().split('\n')[3:-1]
 
 
@@ -32,7 +32,7 @@ def update(package_index):
         options.append('--no-progress-bar')
     f = StringIO()
     with redirect_stdout(f):
-        a = pip.main(['install', *options, '%s==%s' % (package_name, package_new_version)])
+        a = main(['install', *options, '%s==%s' % (package_name, package_new_version)])
     if a == 2:
         choice = input("Python needs to be elevated with UAC in order to continue. "
                        "Do you want to give access? [Y,n] ")

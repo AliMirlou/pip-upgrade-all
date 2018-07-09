@@ -3,7 +3,7 @@ Simple and easy-to-use app to update pip packages.
 
 ## Requirements
  - **[python]** (>=3.4)
- - pip (>=9.0.1)
+ - pip (>=10.0.1)
 
 ## Usage
     $ python pip-upgrade-all.py
