@@ -1,4 +1,7 @@
 # pip-upgrade-all
+
+:warning: **_This project was only a hobby and is not being maintained. If you want an active alternative, please check out [this project](https://github.com/realiti4/pip-upgrade)._**
+
 Simple and easy-to-use app to update pip packages.
 
 ## Requirements
